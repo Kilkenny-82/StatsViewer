@@ -12,82 +12,80 @@ public final class CombatResolver {
 
         EntityDamageEvent event = victim.getLastDamageCause();
         if (event == null) {
-            return new CombatInfo("unknown", "unknown", null, "unknown", null);
+            return new CombatInfo("unknown", "environment", null, "unknown", null);
         }
 
         String cause = event.getCause().name().toLowerCase();
 
-        if (!(event instanceof EntityDamageByEntityEvent ede)) {
-            return new CombatInfo(cause, cause, null, cause, null);
-        }
-
-        Entity damager = ede.getDamager();
-
         // =====================
-        // PROJECTILES
+        // ENTITY DAMAGE
         // =====================
-        if (damager instanceof Projectile proj) {
+        if (event instanceof EntityDamageByEntityEvent ede) {
 
-            if (proj.getShooter() instanceof Player player) {
-                return new CombatInfo(
-                        cause,
-                        "player",
-                        player.getName(),
-                        WeaponResolver.resolve(player),
-                        ProjectileResolver.resolve(proj)
-                );
+            Entity damager = ede.getDamager();
+
+            // -------- PROJECTILE --------
+            if (damager instanceof Projectile proj) {
+
+                if (proj.getShooter() instanceof Player player) {
+                    return new CombatInfo(
+                            cause,
+                            "player",
+                            player.getName(),
+                            WeaponResolver.resolve(player),
+                            ProjectileResolver.resolve(proj)
+                    );
+                }
+
+                if (proj.getShooter() instanceof LivingEntity le) {
+                    return new CombatInfo(
+                            cause,
+                            le.getType().name().toLowerCase(),
+                            le.getCustomName(),
+                            le.getType().name().toLowerCase(),
+                            ProjectileResolver.resolve(proj)
+                    );
+                }
             }
 
-            if (proj.getShooter() instanceof LivingEntity le) {
+            // -------- DIRECT MELEE (ZOMBIE FIX) --------
+            if (damager instanceof LivingEntity le) {
                 return new CombatInfo(
                         cause,
                         le.getType().name().toLowerCase(),
                         le.getCustomName(),
                         le.getType().name().toLowerCase(),
-                        proj.getType().name().toLowerCase()
+                        null
                 );
             }
         }
 
         // =====================
-        // DIRECT MELEE
+        // NON-ENTITY DAMAGE (FIRE, POISON, ETC.)
         // =====================
-        if (damager instanceof Player player) {
+        Entity lastAttacker = victim.getLastDamageCause() instanceof EntityDamageByEntityEvent e
+                ? e.getDamager()
+                : null;
+
+        if (lastAttacker instanceof LivingEntity le) {
             return new CombatInfo(
                     cause,
-                    "player",
-                    player.getName(),
-                    WeaponResolver.resolve(player),
+                    le.getType().name().toLowerCase(),
+                    le.getCustomName(),
+                    cause,
                     null
             );
         }
 
         // =====================
-        // WOLF
+        // ENVIRONMENT
         // =====================
-        if (damager instanceof Wolf wolf && wolf.getOwner() instanceof Player owner) {
-            return new CombatInfo(
-                    cause,
-                    "wolf",
-                    owner.getName(),
-                    "wolf",
-                    wolf.getCustomName()
-            );
-        }
-
-        // =====================
-        // TNT
-        // =====================
-        if (damager instanceof TNTPrimed) {
-            return new CombatInfo(
-                    cause,
-                    "player",
-                    null,
-                    "tnt",
-                    null
-            );
-        }
-
-        return new CombatInfo(cause, cause, null, cause, null);
+        return new CombatInfo(
+                cause,
+                "environment",
+                null,
+                cause,
+                null
+        );
     }
 }

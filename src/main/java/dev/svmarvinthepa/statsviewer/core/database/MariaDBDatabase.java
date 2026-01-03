@@ -38,6 +38,7 @@ public class MariaDBDatabase implements Database {
         config.setUsername(username);
         config.setPassword(password);
         config.setPoolName("StatsViewer-MariaDB");
+		config.setDriverClassName("org.mariadb.jdbc.Driver");
 
         // Pool tuning (veilig voor async)
         config.setMaximumPoolSize(10);
