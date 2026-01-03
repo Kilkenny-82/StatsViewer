@@ -1,0 +1,12 @@
+# MultiverseStatistics configuration
+settings:
+  debug: false
+
+modules:
+  world_sessions: true
+  pvp_kills: true
+  mob_kills: true
+  deaths: true
+  
+database:
+  type: sqlite

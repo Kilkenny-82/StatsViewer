@@ -1,0 +1,18 @@
+# Maven target folder
+target/
+
+# IntelliJ IDEA
+*.iml
+.idea/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# macOS
+.DS_Store
+
+# Logs
+logs/
+*.log

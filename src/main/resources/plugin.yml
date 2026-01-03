@@ -1,0 +1,5 @@
+name: StatsViewer
+main: dev.svmarvinthepa.statsviewer.core.StatsViewerPlugin
+version: 0.1.0
+api-version: 1.21
+author: Kilkenny-82
