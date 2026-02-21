@@ -1,6 +1,8 @@
 package dev.svmarvinthepa.statsviewer.core.repository;
 
 import dev.svmarvinthepa.statsviewer.core.database.DatabaseManager;
+import dev.svmarvinthepa.statsviewer.core.database.write.DbWriteQueue;
+import dev.svmarvinthepa.statsviewer.core.database.write.DbWriteTask;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,7 +30,7 @@ public class DeathsRepository {
             double y,
             double z,
             LocalDateTime timestamp,
-			String damageSource
+            String damageSource
     ) {
 
         String sql = """
@@ -41,28 +43,32 @@ public class DeathsRepository {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
-        try (Connection c = databaseManager.getDatabase().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        // 🔵 enqueue write task
+        DbWriteQueue.submit(() -> {
+            try (Connection c = databaseManager.getDatabase().getConnection();
+                 PreparedStatement ps = c.prepareStatement(sql)) {
 
-            ps.setString(1, playerUuid);
-            ps.setString(2, playerName);
-            ps.setString(3, cause);
-            ps.setString(4, deathMessage);
-            ps.setString(5, killerType);
-            ps.setString(6, killerName);
-            ps.setString(7, world);
-            ps.setString(8, gamemode);
-            ps.setString(9, biome);
-            ps.setDouble(10, x);
-            ps.setDouble(11, y);
-            ps.setDouble(12, z);
-            ps.setString(13, timestamp.toString());
-            ps.setString(14, damageSource);
+                ps.setString(1, playerUuid);
+                ps.setString(2, playerName);
+                ps.setString(3, cause);
+                ps.setString(4, deathMessage);
+                ps.setString(5, killerType);
+                ps.setString(6, killerName);
+                ps.setString(7, world);
+                ps.setString(8, gamemode);
+                ps.setString(9, biome);
+                ps.setDouble(10, x);
+                ps.setDouble(11, y);
+                ps.setDouble(12, z);
+                ps.setString(13, timestamp.toString());
+                ps.setString(14, damageSource);
 
-            ps.executeUpdate();
+                ps.executeUpdate();
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            } catch (Exception e) {
+                // ⚠️ NO rethrow — worker must stay alive
+                throw new RuntimeException("Failed to insert player death", e);
+            }
+        });
     }
 }

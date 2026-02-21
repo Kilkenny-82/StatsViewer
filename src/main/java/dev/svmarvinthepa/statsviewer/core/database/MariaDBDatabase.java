@@ -41,9 +41,9 @@ public class MariaDBDatabase implements Database {
 		config.setDriverClassName("org.mariadb.jdbc.Driver");
 
         // Pool tuning (veilig voor async)
-        config.setMaximumPoolSize(10);
-        config.setMinimumIdle(2);
-        config.setConnectionTimeout(10000);
+        config.setMaximumPoolSize(20);
+        config.setMinimumIdle(5);
+        config.setConnectionTimeout(15000);
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1800000);
 

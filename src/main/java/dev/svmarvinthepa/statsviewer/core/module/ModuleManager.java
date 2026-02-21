@@ -2,9 +2,10 @@ package dev.svmarvinthepa.statsviewer.core.module;
 
 import dev.svmarvinthepa.statsviewer.api.context.StatsContext;
 import dev.svmarvinthepa.statsviewer.api.context.SessionSnapshot;
-import dev.svmarvinthepa.statsviewer.modules.deaths.DeathsModule;
+import dev.svmarvinthepa.statsviewer.core.util.combat.CombatInfo;
+import dev.svmarvinthepa.statsviewer.core.util.combat.CombatResolver;
 import dev.svmarvinthepa.statsviewer.modules.mobkills.MobKillModule;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.plugin.Plugin;
@@ -25,7 +26,7 @@ public class ModuleManager {
         modules.put(module.getName(), module);
     }
 
-    public void enableFromConfig(FileConfiguration config) {
+    public void enableFromConfig(org.bukkit.configuration.file.FileConfiguration config) {
         for (StatsModule module : modules.values()) {
             if (config.getBoolean("modules." + module.getName(), true)) {
                 module.onEnable();
@@ -50,22 +51,32 @@ public class ModuleManager {
     }
 
     /* =========================
-       Event dispatching
+       Death handling
        ========================= */
 
     public void onPlayerDeath(PlayerDeathEvent event, StatsContext ctx) {
-        modules.values().forEach(module -> {
-            if (module instanceof DeathsModule dm) {
-                dm.onPlayerDeath(event, ctx);
-            }
-        });
-    }
 
-	public void onMobKill(EntityDeathEvent event, StatsContext ctx) {
+		Player victim = event.getEntity();
+		CombatInfo combat = CombatResolver.resolve(victim);
+	
 		for (StatsModule module : modules.values()) {
-			if (module instanceof dev.svmarvinthepa.statsviewer.modules.mobkills.MobKillModule mk) {
-				mk.onEntityDeath(event, ctx);
+	
+			if (module instanceof DeathAwareModule dm) {
+				dm.onPlayerDeath(victim, event, combat, ctx);
+			}
+	
+			if (module instanceof PvPAwareModule pm && combat.isPvP()) {
+				pm.onPvPDeath(victim, combat, ctx);
 			}
 		}
+	}
+
+    public void onMobKill(EntityDeathEvent event, StatsContext ctx) {
+
+        for (StatsModule module : modules.values()) {
+            if (module instanceof MobKillModule mk) {
+                mk.onEntityDeath(event, ctx);
+            }
+        }
     }
 }

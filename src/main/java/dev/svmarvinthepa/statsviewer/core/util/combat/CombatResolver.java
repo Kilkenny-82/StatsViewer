@@ -12,7 +12,7 @@ public final class CombatResolver {
 
         EntityDamageEvent event = victim.getLastDamageCause();
         if (event == null) {
-            return new CombatInfo("unknown", "environment", null, "unknown", null);
+            return CombatInfo.environment("unknown");
         }
 
         String cause = event.getCause().name().toLowerCase();
@@ -21,71 +21,80 @@ public final class CombatResolver {
         // ENTITY DAMAGE
         // =====================
         if (event instanceof EntityDamageByEntityEvent ede) {
+            return resolveFromEntityDamage(ede, cause);
+        }
 
-            Entity damager = ede.getDamager();
+        // =====================
+        // ENVIRONMENT (fire, fall, poison, etc.)
+        // =====================
+        return CombatInfo.environment(cause);
+    }
 
-            // -------- PROJECTILE --------
-            if (damager instanceof Projectile proj) {
+    private static CombatInfo resolveFromEntityDamage(
+            EntityDamageByEntityEvent ede,
+            String finalCause
+    ) {
 
-                if (proj.getShooter() instanceof Player player) {
-                    return new CombatInfo(
-                            cause,
-                            "player",
-                            player.getName(),
-                            WeaponResolver.resolve(player),
-                            ProjectileResolver.resolve(proj)
-                    );
-                }
+        Entity damager = ede.getDamager();
 
-                if (proj.getShooter() instanceof LivingEntity le) {
-                    return new CombatInfo(
-                            cause,
-                            le.getType().name().toLowerCase(),
-                            le.getCustomName(),
-                            le.getType().name().toLowerCase(),
-                            ProjectileResolver.resolve(proj)
-                    );
-                }
+        // -------- PROJECTILES --------
+        if (damager instanceof Projectile proj) {
+
+            if (proj.getShooter() instanceof Player player) {
+                return new CombatInfo(
+                        finalCause,
+                        "player",
+                        player.getName(),
+                        WeaponResolver.resolve(player),
+                        ProjectileResolver.resolve(proj)
+                );
             }
 
-            // -------- DIRECT MELEE (ZOMBIE FIX) --------
-            if (damager instanceof LivingEntity le) {
+            if (proj.getShooter() instanceof LivingEntity le) {
                 return new CombatInfo(
-                        cause,
+                        finalCause,
                         le.getType().name().toLowerCase(),
                         le.getCustomName(),
                         le.getType().name().toLowerCase(),
-                        null
+                        ProjectileResolver.resolve(proj)
                 );
             }
         }
 
-        // =====================
-        // NON-ENTITY DAMAGE (FIRE, POISON, ETC.)
-        // =====================
-        Entity lastAttacker = victim.getLastDamageCause() instanceof EntityDamageByEntityEvent e
-                ? e.getDamager()
-                : null;
-
-        if (lastAttacker instanceof LivingEntity le) {
+        // -------- WOLF (named support) --------
+        if (damager instanceof Wolf wolf && wolf.getOwner() instanceof Player owner) {
             return new CombatInfo(
-                    cause,
-                    le.getType().name().toLowerCase(),
-                    le.getCustomName(),
-                    cause,
+                    finalCause,
+                    "wolf",
+                    owner.getName(),
+                    "wolf",
+                    wolf.getCustomName()
+            );
+        }
+
+        // -------- PLAYER MELEE --------
+        if (damager instanceof Player player) {
+            return new CombatInfo(
+                    finalCause,
+                    "player",
+                    player.getName(),
+                    WeaponResolver.resolve(player),
                     null
             );
         }
 
-        // =====================
-        // ENVIRONMENT
-        // =====================
-        return new CombatInfo(
-                cause,
-                "environment",
-                null,
-                cause,
-                null
-        );
+        // -------- MOB MELEE --------
+        if (damager instanceof LivingEntity le) {
+            return new CombatInfo(
+                    finalCause,
+                    le.getType().name().toLowerCase(),
+                    le.getCustomName(),
+                    le.getType().name().toLowerCase(),
+                    null
+            );
+        }
+
+        // -------- FALLBACK --------
+        return CombatInfo.environment(finalCause);
     }
 }

@@ -10,6 +10,8 @@ import org.bukkit.Bukkit;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MCStatsModule implements StatsModule {
 
@@ -35,6 +37,7 @@ public class MCStatsModule implements StatsModule {
 
     @Override
     public void onDisable() {
+		MCSTATS_EXECUTOR.shutdown();
         DebugLogger.info("MCStatsModule disabled");
     }
 
@@ -43,56 +46,59 @@ public class MCStatsModule implements StatsModule {
         // niets nodig
     }
 
-    @Override
-    public void onSessionEnd(SessionSnapshot snapshot) {
+	@Override
+	public void onSessionEnd(SessionSnapshot snapshot) {
+	
+		if (snapshot.stats().isEmpty()) {
+			DebugLogger.debug("MCStats SKIP no stats for " + snapshot.playerName());
+			return;
+		}
+	
+		LocalDate date = snapshot.endTime().toLocalDate();
+		int year = date.getYear();
+		int month = date.getMonthValue();
+	
+		DebugLogger.debug(String.format(
+				"MCStats END %s world=%s gamemode=%s",
+				snapshot.playerName(),
+				snapshot.world(),
+				snapshot.gamemode()
+		));
+	
+		MCSTATS_EXECUTOR.execute(() -> {
+			try {
+				snapshot.stats().forEach((category, stats) -> {
+					String table = "stats_" + category;
+	
+					for (Map.Entry<String, Long> entry : stats.entrySet()) {
+						long delta = entry.getValue();
+						if (delta <= 0) continue;
+	
+						repository.increment(
+								table,
+								snapshot.playerUuid().toString(),
+								entry.getKey(),
+								delta,
+								snapshot.world(),
+								snapshot.gamemode(),
+								year,
+								month
+						);
+					}
+				});
+			} catch (Exception e) {
+				DebugLogger.warn(
+						"MCStats insert skipped (DB busy) for " + snapshot.playerName()
+				);
+			}
+		});
+	}
 
-        if (snapshot.stats().isEmpty()) {
-            DebugLogger.debug("MCStats SKIP no stats for " + snapshot.playerName());
-            return;
-        }
+	private static final ExecutorService MCSTATS_EXECUTOR =
+			Executors.newFixedThreadPool(2, r -> {
+				Thread t = new Thread(r, "StatsViewer-MCStats");
+				t.setDaemon(true);
+				return t;
+			});
 
-        LocalDate date = snapshot.endTime().toLocalDate();
-        int year = date.getYear();
-        int month = date.getMonthValue();
-
-        DebugLogger.debug(String.format(
-                "MCStats END %s world=%s gamemode=%s",
-                snapshot.playerName(),
-                snapshot.world(),
-                snapshot.gamemode()
-        ));
-
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            snapshot.stats().forEach((category, stats) -> {
-                String table = "stats_" + category;
-
-                for (Map.Entry<String, Long> entry : stats.entrySet()) {
-                    long delta = entry.getValue();
-                    if (delta <= 0) continue;
-
-                    DebugLogger.debug(String.format(
-                            "MCStats %s %s +%d (%s/%s %d-%02d)",
-                            snapshot.playerName(),
-                            entry.getKey(),
-                            delta,
-                            snapshot.world(),
-                            snapshot.gamemode(),
-                            year,
-                            month
-                    ));
-
-                    repository.increment(
-                            table,
-                            snapshot.playerUuid().toString(),
-                            entry.getKey(),
-                            delta,
-                            snapshot.world(),
-                            snapshot.gamemode(),
-                            year,
-                            month
-                    );
-                }
-            });
-        });
-    }
 }

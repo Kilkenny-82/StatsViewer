@@ -7,7 +7,7 @@
 
     <groupId>dev.svmarvinthepa.statsviewer.core</groupId>
     <artifactId>StatsViewer</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.4</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -33,7 +33,6 @@
 			<artifactId>mariadb-java-client</artifactId>
 			<version>3.3.3</version>
 		</dependency>
-
     </dependencies>
 
     <repositories>
@@ -69,7 +68,18 @@
 					</execution>
 				</executions>
 			</plugin>
-	
+	        <plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.11.0</version>
+				<configuration>
+					<release>21</release>
+					<compilerArgs>
+						<arg>--add-modules</arg>
+						<arg>jdk.httpserver</arg>
+					</compilerArgs>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

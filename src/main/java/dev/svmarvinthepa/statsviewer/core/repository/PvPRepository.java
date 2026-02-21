@@ -1,6 +1,8 @@
 package dev.svmarvinthepa.statsviewer.core.repository;
 
 import dev.svmarvinthepa.statsviewer.core.database.DatabaseManager;
+import dev.svmarvinthepa.statsviewer.core.database.write.DbWriteQueue;
+import dev.svmarvinthepa.statsviewer.core.database.write.DbWriteTask;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -33,23 +35,28 @@ public class PvPRepository {
             VALUES (?,?,?,?,?,?,?,?,?,?)
         """;
 
-        try (Connection c = databaseManager.getDatabase().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        // 🔵 enqueue write task
+        DbWriteQueue.submit(() -> {
+            try (Connection c = databaseManager.getDatabase().getConnection();
+                 PreparedStatement ps = c.prepareStatement(sql)) {
 
-            ps.setString(1, killerUuid);
-            ps.setString(2, killerName);
-            ps.setString(3, victimUuid);
-            ps.setString(4, victimName);
-            ps.setString(5, world);
-            ps.setString(6, gamemode);
-            ps.setString(7, biome);
-            ps.setString(8, weapon);
-            ps.setString(9, projectile);
-            ps.setString(10, timestamp.toString());
+                ps.setString(1, killerUuid);
+                ps.setString(2, killerName);
+                ps.setString(3, victimUuid);
+                ps.setString(4, victimName);
+                ps.setString(5, world);
+                ps.setString(6, gamemode);
+                ps.setString(7, biome);
+                ps.setString(8, weapon);
+                ps.setString(9, projectile);
+                ps.setString(10, timestamp.toString());
+		    
+                ps.executeUpdate();
 
-            ps.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            } catch (Exception e) {
+                // ⚠️ NO rethrow — worker must stay alive
+                throw new RuntimeException("Failed to insert PvP", e);
+            }
+        });
     }
 }

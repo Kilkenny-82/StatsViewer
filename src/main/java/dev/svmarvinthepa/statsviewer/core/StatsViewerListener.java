@@ -26,25 +26,22 @@ public class StatsViewerListener implements Listener {
         StatsViewerAPI.handleQuit(event.getPlayer());
     }
 
-    @EventHandler
-    public void onWorldChange(PlayerChangedWorldEvent event) {
-        Player player = event.getPlayer();
-        World newWorld = player.getWorld();
-        CustomGameMode gm = CustomGameModeRegistry.resolve(player);
-
-        StatsViewerAPI.handleSwitch(player, newWorld, gm);
-    }
-
-    @EventHandler
-    public void onVanillaGamemodeChange(PlayerGameModeChangeEvent event) {
-        Player player = event.getPlayer();
-        World world = player.getWorld();
-
-        // let op: nieuwe gamemode zit in het event
-        CustomGameMode gm = () -> event.getNewGameMode().name();
-
-        StatsViewerAPI.handleSwitch(player, world, gm);
-    }
+	@EventHandler
+	public void onWorldChange(PlayerChangedWorldEvent event) {
+		Player player = event.getPlayer();
+		World newWorld = player.getWorld();
+	
+		StatsViewerAPI.handleSwitch(player, newWorld);
+	}
+	
+	@EventHandler
+	public void onVanillaGamemodeChange(PlayerGameModeChangeEvent event) {
+		Player player = event.getPlayer();
+	
+		CustomGameMode vanilla = () -> event.getNewGameMode().name();
+	
+		StatsViewerAPI.handleVanillaGameModeChange(player, vanilla);
+	}
 	
 	@EventHandler
 	public void onPlayerDeath(PlayerDeathEvent event) {
@@ -55,4 +52,5 @@ public class StatsViewerListener implements Listener {
 	public void onEntityDeath(EntityDeathEvent event) {
 		StatsViewerAPI.handleEntityDeath(event);
 	}
+	
 }

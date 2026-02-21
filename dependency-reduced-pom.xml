@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.svmarvinthepa.statsviewer.core</groupId>
   <artifactId>StatsViewer</artifactId>
-  <version>0.1.1</version>
+  <version>0.1.4</version>
   <build>
     <plugins>
       <plugin>
@@ -26,6 +26,17 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+        <configuration>
+          <release>21</release>
+          <compilerArgs>
+            <arg>--add-modules</arg>
+            <arg>jdk.httpserver</arg>
+          </compilerArgs>
+        </configuration>
       </plugin>
     </plugins>
   </build>

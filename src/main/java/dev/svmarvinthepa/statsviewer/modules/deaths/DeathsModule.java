@@ -2,19 +2,19 @@ package dev.svmarvinthepa.statsviewer.modules.deaths;
 
 import dev.svmarvinthepa.statsviewer.api.context.StatsContext;
 import dev.svmarvinthepa.statsviewer.core.StatsViewerPlugin;
+import dev.svmarvinthepa.statsviewer.core.module.DeathAwareModule;
 import dev.svmarvinthepa.statsviewer.core.module.StatsModule;
 import dev.svmarvinthepa.statsviewer.core.repository.DeathsRepository;
 import dev.svmarvinthepa.statsviewer.core.util.DebugLogger;
-import dev.svmarvinthepa.statsviewer.core.util.combat.CombatResolver;
 import dev.svmarvinthepa.statsviewer.core.util.combat.CombatInfo;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.event.entity.PlayerDeathEvent;
 
 import java.time.LocalDateTime;
 
-public class DeathsModule implements StatsModule {
+public class DeathsModule implements StatsModule, DeathAwareModule {
 
     private final StatsViewerPlugin plugin;
     private DeathsRepository repository;
@@ -40,29 +40,28 @@ public class DeathsModule implements StatsModule {
     }
 
     @Override
-    public void onSessionStart(StatsContext ctx) {
-        // niet nodig
-    }
+    public void onSessionStart(StatsContext ctx) {}
 
     @Override
-    public void onSessionEnd(dev.svmarvinthepa.statsviewer.api.context.SessionSnapshot snapshot) {
-        // niet nodig
-    }
+    public void onSessionEnd(dev.svmarvinthepa.statsviewer.api.context.SessionSnapshot snapshot) {}
 
     /* =========================
-       Death handling
+       DeathAwareModule
        ========================= */
 
-    public void onPlayerDeath(PlayerDeathEvent event, StatsContext ctx) {
+    @Override
+    public void onPlayerDeath(
+			Player victim,
+			PlayerDeathEvent event,
+			CombatInfo info,
+			StatsContext ctx
+	) {
 
-        Player player = event.getEntity();
-        Location loc = player.getLocation();
-
-        CombatInfo info = CombatResolver.resolve(player);
+        Location loc = victim.getLocation();
 
         DebugLogger.debug(String.format(
                 "Death %s cause=%s killer=%s name=%s source=%s world=%s",
-                player.getName(),
+                victim.getName(),
                 info.cause(),
                 info.killerType(),
                 info.killerName(),
@@ -72,8 +71,8 @@ public class DeathsModule implements StatsModule {
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () ->
                 repository.insert(
-                        player.getUniqueId().toString(),
-                        player.getName(),
+                        victim.getUniqueId().toString(),
+                        victim.getName(),
                         info.cause(),
                         event.getDeathMessage(),
                         info.killerType(),

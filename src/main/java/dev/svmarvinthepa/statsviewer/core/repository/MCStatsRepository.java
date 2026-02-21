@@ -2,10 +2,11 @@ package dev.svmarvinthepa.statsviewer.core.repository;
 
 import dev.svmarvinthepa.statsviewer.core.database.DatabaseManager;
 import dev.svmarvinthepa.statsviewer.core.database.MariaDBDatabase;
+import dev.svmarvinthepa.statsviewer.core.database.write.DbWriteQueue;
+import dev.svmarvinthepa.statsviewer.core.database.write.DbWriteTask;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 public class MCStatsRepository {
 
@@ -45,27 +46,31 @@ public class MCStatsRepository {
                     DO UPDATE SET stat_count = stat_count + excluded.stat_count
                   """.formatted(table);
 
-        try (Connection c = databaseManager.getDatabase().getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
+        // 🔵 enqueue DB write
+        DbWriteQueue.submit(() -> {
+            try (Connection c = databaseManager.getDatabase().getConnection();
+                 PreparedStatement ps = c.prepareStatement(sql)) {
 
-            ps.setString(1, playerUuid);
-            ps.setString(2, statName);
-            ps.setLong(3, amount);
-            ps.setString(4, world);
-            ps.setString(5, gamemode);
-            ps.setInt(6, year);
-            ps.setInt(7, month);
+                ps.setString(1, playerUuid);
+                ps.setString(2, statName);
+                ps.setLong(3, amount);
+                ps.setString(4, world);
+                ps.setString(5, gamemode);
+                ps.setInt(6, year);
+                ps.setInt(7, month);
 
-            ps.executeUpdate();
+                ps.executeUpdate();
 
-        } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Failed to increment stat: " + statName +
-                    " for player=" + playerUuid +
-                    " table=" + table +
-                    " (db=" + (isMariaDB ? "MariaDB" : "SQLite") + ")",
-                    e
-            );
-        }
+            } catch (Exception e) {
+                // ⚠️ nooit laten ontsnappen — worker moet blijven draaien
+                throw new RuntimeException(
+                        "Failed to increment stat: " + statName +
+                        " for player=" + playerUuid +
+                        " table=" + table +
+                        " (db=" + (isMariaDB ? "MariaDB" : "SQLite") + ")",
+                        e
+                );
+            }
+        });
     }
 }

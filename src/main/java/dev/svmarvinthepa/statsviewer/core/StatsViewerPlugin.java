@@ -2,6 +2,8 @@ package dev.svmarvinthepa.statsviewer.core;
 
 import dev.svmarvinthepa.statsviewer.api.StatsViewerAPI;
 import dev.svmarvinthepa.statsviewer.core.database.DatabaseManager;
+import dev.svmarvinthepa.statsviewer.core.database.write.DbWriteWorker;
+import dev.svmarvinthepa.statsviewer.core.database.write.DbWriteQueue;
 import dev.svmarvinthepa.statsviewer.core.gamemode.CustomGameModeRegistry;
 import dev.svmarvinthepa.statsviewer.core.gamemode.VanillaGameModeProvider;
 import dev.svmarvinthepa.statsviewer.core.module.ModuleManager;
@@ -12,6 +14,7 @@ import dev.svmarvinthepa.statsviewer.modules.mobkills.MobKillModule;
 import dev.svmarvinthepa.statsviewer.modules.deaths.DeathsModule;
 import dev.svmarvinthepa.statsviewer.modules.mcstats.MCStatsModule;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 public class StatsViewerPlugin extends JavaPlugin {
 
@@ -19,6 +22,13 @@ public class StatsViewerPlugin extends JavaPlugin {
 
     private DatabaseManager databaseManager;
     private ModuleManager moduleManager;
+
+    // 🔴 DB write infrastructure
+    private DbWriteWorker dbWriteWorker;
+    private Thread dbWriteThread;
+
+    // 🔵 monitoring task
+    private BukkitTask dbQueueMonitorTask;
 
     public static StatsViewerPlugin getInstance() {
         return instance;
@@ -38,6 +48,19 @@ public class StatsViewerPlugin extends JavaPlugin {
         databaseManager = new DatabaseManager(this);
         databaseManager.init();
 
+        // 🔴 start DB write worker
+        dbWriteWorker = new DbWriteWorker(this);
+        dbWriteThread = new Thread(dbWriteWorker, "StatsViewer-DB-Worker");
+        dbWriteThread.start();
+
+        // 🔵 optional monitoring (every 5 minutes)
+        dbQueueMonitorTask = getServer().getScheduler().runTaskTimerAsynchronously(
+                this,
+                () -> DebugLogger.info("DB queue size = " + DbWriteQueue.size()),
+                20L * 60 * 5,
+                20L * 60 * 5
+        );
+
         // gamemodes
         CustomGameModeRegistry.register(new VanillaGameModeProvider());
 
@@ -54,7 +77,7 @@ public class StatsViewerPlugin extends JavaPlugin {
         // API
         StatsViewerAPI.init(moduleManager);
 
-        // listeners (bridge Bukkit → API)
+        // listeners
         getServer().getPluginManager()
                 .registerEvents(new StatsViewerListener(), this);
 
@@ -63,6 +86,20 @@ public class StatsViewerPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+
+        // 🔵 stop monitoring
+        if (dbQueueMonitorTask != null) {
+            dbQueueMonitorTask.cancel();
+        }
+
+        // 🔴 stop DB worker
+        if (dbWriteWorker != null) {
+            dbWriteWorker.shutdown();
+        }
+        if (dbWriteThread != null) {
+            dbWriteThread.interrupt();
+        }
+
         if (moduleManager != null) {
             moduleManager.disableAll();
         }

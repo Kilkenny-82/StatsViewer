@@ -30,7 +30,8 @@ public class StatsContext {
        ========================= */
 
     private World world;
-    private CustomGameMode gameMode;
+    private CustomGameMode vanillaGameMode;
+    private CustomGameMode pluginGameMode;							  
 
     private final LocalDate date;
     private final LocalDateTime createdAt;
@@ -56,19 +57,43 @@ public class StatsContext {
     private final Map<String, Integer> killedStart = new HashMap<>();
     private final Map<String, Integer> killedByStart = new HashMap<>();
 
-    public StatsContext(Player player, World world, CustomGameMode gameMode) {
+    public StatsContext(Player player, World world, CustomGameMode vanillaGameMode) {
         this.player = player;
         this.playerUuid = player.getUniqueId();
         this.playerName = player.getName();
 
         this.world = world;
-        this.gameMode = gameMode;
+        this.vanillaGameMode = vanillaGameMode;
 
         this.date = LocalDate.now();
         this.createdAt = LocalDateTime.now();
         this.startTime = this.createdAt;
 
         captureStartStats();
+    }
+
+    /* =========================
+       Gamemode ownership
+       ========================= */
+
+    public CustomGameMode getEffectiveGameMode() {
+        return pluginGameMode != null ? pluginGameMode : vanillaGameMode;
+    }
+
+    public void setVanillaGameMode(CustomGameMode gm) {
+        this.vanillaGameMode = gm;
+    }
+
+    public void setPluginGameMode(CustomGameMode gm) {
+        this.pluginGameMode = gm;
+    }
+
+    public void clearPluginGameMode() {
+        this.pluginGameMode = null;
+    }
+
+    public boolean isPluginActive() {
+        return pluginGameMode != null;
     }
 
     /* =========================
@@ -80,8 +105,8 @@ public class StatsContext {
     public String getPlayerName() { return playerName; }
     public World getWorld() { return world; }
     public String getWorldName() { return world.getName(); }
-    public CustomGameMode getGameMode() { return gameMode; }
-    public String getGameModeName() { return gameMode.getName(); }
+	public CustomGameMode getGameMode() { return getEffectiveGameMode(); }
+	public String getGameModeName() { return getEffectiveGameMode().getName(); }
     public LocalDate getDate() { return date; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getStartTime() { return startTime; }
@@ -107,7 +132,7 @@ public class StatsContext {
                 playerUuid,
                 playerName,
                 world.getName(),
-                gameMode.getName(),
+                getGameModeName(),
                 startTime,
                 endTime,
                 durationSeconds,
@@ -115,9 +140,8 @@ public class StatsContext {
         );
     }
 
-    public void startNewSession(World newWorld, CustomGameMode newGameMode) {
+    public void startNewSession(World newWorld) {
         this.world = newWorld;
-        this.gameMode = newGameMode;
         this.startTime = LocalDateTime.now();
         this.endTime = null;
         this.closed = false;
@@ -126,8 +150,9 @@ public class StatsContext {
         captureStartStats();
     }
 
-    public boolean isSameContext(World world, CustomGameMode gameMode) {
-        return this.world.equals(world) && this.gameMode.equals(gameMode);
+    public boolean isSameContext(World world, CustomGameMode effectiveGameMode) {
+        return this.world.equals(world)
+                && getEffectiveGameMode().equals(effectiveGameMode);
     }
 
     /* =========================

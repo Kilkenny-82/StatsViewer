@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>StatsViewer</title>
+</head>
+<body>
+<h1>Playtime</h1>
+<table id="table"></table>
+
+<script>
+fetch('/api/playtime')
+  .then(r => r.json())
+  .then(data => {
+    const table = document.getElementById('table');
+    data.forEach(row => {
+      table.innerHTML += `<tr><td>${row.player}</td><td>${row.time}</td></tr>`;
+    });
+  });
+</script>
+</body>
+</html>

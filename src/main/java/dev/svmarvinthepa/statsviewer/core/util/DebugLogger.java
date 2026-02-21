@@ -2,6 +2,7 @@ package dev.svmarvinthepa.statsviewer.core.util;
 
 import org.bukkit.plugin.Plugin;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DebugLogger {
@@ -22,8 +23,14 @@ public class DebugLogger {
         if (debug) logger.info("[DEBUG] " + msg);
     }
 
+    public static void warn(String msg) {
+        logger.warning(msg);
+    }
+
     public static void error(String msg, Throwable t) {
         logger.severe(msg);
-        t.printStackTrace();
+        if (t != null) {
+            t.printStackTrace();
+        }
     }
 }
