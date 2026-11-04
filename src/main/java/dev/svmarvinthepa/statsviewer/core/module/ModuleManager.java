@@ -70,6 +70,24 @@ public class ModuleManager {
 			}
 		}
 	}
+ 
+    public void onExternalDeath(
+            Player victim,
+            String deathMessage,
+            CombatInfo combat,
+            StatsContext ctx
+    ) {
+        for (StatsModule module : modules.values()) {
+
+            if (module instanceof DeathAwareModule dm) {
+                dm.onExternalDeath(victim, deathMessage, combat, ctx);
+            }
+
+            if (module instanceof PvPAwareModule pm && combat.isPvP()) {
+                pm.onPvPDeath(victim, combat, ctx);
+            }
+        }
+    }
 
     public void onMobKill(EntityDeathEvent event, StatsContext ctx) {
 

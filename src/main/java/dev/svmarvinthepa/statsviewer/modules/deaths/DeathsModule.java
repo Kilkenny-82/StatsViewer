@@ -56,17 +56,41 @@ public class DeathsModule implements StatsModule, DeathAwareModule {
 			CombatInfo info,
 			StatsContext ctx
 	) {
+        record(victim, event.getDeathMessage(), info, ctx);
+    }
 
+    @Override
+    public void onExternalDeath(
+            Player victim,
+            String deathMessage,
+            CombatInfo info,
+            StatsContext ctx
+    ) {
+        record(victim, deathMessage, info, ctx);
+    }
+
+    private void record(
+            Player victim,
+            String deathMessage,
+            CombatInfo info,
+            StatsContext ctx
+    ) {
         Location loc = victim.getLocation();
+ 
+        // read everything now, the gamemode can change before the async task runs
+        final String world = ctx.getWorldName();
+        final String gamemode = ctx.getGameModeName();
+        final String biome = loc.getBlock().getBiome().name().toLowerCase();
 
         DebugLogger.debug(String.format(
-                "Death %s cause=%s killer=%s name=%s source=%s world=%s",
+                "Death %s cause=%s killer=%s name=%s source=%s world=%s gamemode=%s",
                 victim.getName(),
                 info.cause(),
                 info.killerType(),
                 info.killerName(),
                 info.weapon(),
-                ctx.getWorldName()
+                world,
+                gamemode
         ));
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () ->
@@ -74,12 +98,12 @@ public class DeathsModule implements StatsModule, DeathAwareModule {
                         victim.getUniqueId().toString(),
                         victim.getName(),
                         info.cause(),
-                        event.getDeathMessage(),
+                        deathMessage,
                         info.killerType(),
                         info.killerName(),
-                        ctx.getWorldName(),
-                        ctx.getGameModeName(),
-                        loc.getBlock().getBiome().name().toLowerCase(),
+                        world,
+                        gamemode,
+                        biome,
                         loc.getX(),
                         loc.getY(),
                         loc.getZ(),

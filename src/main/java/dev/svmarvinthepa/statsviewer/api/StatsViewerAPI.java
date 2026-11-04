@@ -104,6 +104,18 @@ public final class StatsViewerAPI {
 	
 		moduleManager.onPlayerDeath(event, ctx);
 	}
+ 	
+	/**
+	 * Register a death that Bukkit never reported as a PlayerDeathEvent
+	 * (e.g. Parkour teleports the player to a checkpoint instead of killing them).
+	 * Counted in the player's current context, so it lands on the active gamemode.
+	 */
+	public static void handleExternalDeath(Player player, String deathMessage, CombatInfo combat) {
+		StatsContext ctx = StatsContextManager.get(player);
+		if (ctx == null) return;
+
+		moduleManager.onExternalDeath(player, deathMessage, combat, ctx);
+	}
 	
 	public static void handleEntityDeath(EntityDeathEvent event) {
 

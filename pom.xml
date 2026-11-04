@@ -7,20 +7,19 @@
 
     <groupId>dev.svmarvinthepa.statsviewer.core</groupId>
     <artifactId>StatsViewer</artifactId>
-    <version>0.1.4</version>
+    <version>0.2.0</version>
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>25</maven.compiler.release>
     </properties>
 
     <dependencies>
-        <!-- Paper API 1.21 -->
+        <!-- Paper API -->
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21-R0.1-SNAPSHOT</version>
+            <version>[26.2.build,)</version>
             <scope>provided</scope>
         </dependency>
 		<dependency>
@@ -47,7 +46,15 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.5.1</version>
+				<version>3.6.1</version>
+				<dependencies>
+					<!-- ASM die Java 25 class files (major version 69) kan lezen -->
+					<dependency>
+						<groupId>org.ow2.asm</groupId>
+						<artifactId>asm</artifactId>
+						<version>9.9</version>
+					</dependency>
+				</dependencies>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -71,13 +78,9 @@
 	        <plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.11.0</version>
+				<version>3.14.1</version>
 				<configuration>
-					<release>21</release>
-					<compilerArgs>
-						<arg>--add-modules</arg>
-						<arg>jdk.httpserver</arg>
-					</compilerArgs>
+					<release>25</release>
 				</configuration>
 			</plugin>
 		</plugins>

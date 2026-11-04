@@ -1,7 +1,6 @@
 package dev.svmarvinthepa.statsviewer.core.util.combat;
 
 import org.bukkit.entity.*;
-import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
 
 public final class ProjectileResolver {
@@ -12,10 +11,11 @@ public final class ProjectileResolver {
 
         // ARROW
         if (proj instanceof Arrow arrow) {
-            PotionData data = arrow.getBasePotionData();
+            PotionType type = arrow.getBasePotionType();
 
-            if (data != null && data.getType() != PotionType.WATER) {
-                return data.getType().name().toLowerCase() + "_arrow";
+            if (type != null && type != PotionType.WATER) {
+				String name = type.name().toLowerCase().replaceFirst("^(long|strong)_", "");
+                return name + "_arrow";
             }
 
             return "arrow";

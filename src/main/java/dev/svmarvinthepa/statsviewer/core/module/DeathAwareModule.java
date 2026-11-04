@@ -12,4 +12,16 @@ public interface DeathAwareModule {
         CombatInfo combat,
         StatsContext ctx
     );
+
+    /**
+     * Death that did not go through a PlayerDeathEvent (for example a
+     * "soft" death in a minigame plugin that teleports the player back).
+     * Modules that don't care can ignore it.
+     */
+    default void onExternalDeath(
+        Player victim,
+        String deathMessage,
+        CombatInfo combat,
+        StatsContext ctx
+    ) {}
 }

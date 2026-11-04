@@ -3,12 +3,12 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.svmarvinthepa.statsviewer.core</groupId>
   <artifactId>StatsViewer</artifactId>
-  <version>0.1.4</version>
+  <version>0.2.0</version>
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.5.1</version>
+        <version>3.6.1</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -26,16 +26,19 @@
             </configuration>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>9.9</version>
+          </dependency>
+        </dependencies>
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.11.0</version>
+        <version>3.14.1</version>
         <configuration>
-          <release>21</release>
-          <compilerArgs>
-            <arg>--add-modules</arg>
-            <arg>jdk.httpserver</arg>
-          </compilerArgs>
+          <release>25</release>
         </configuration>
       </plugin>
     </plugins>
@@ -50,12 +53,11 @@
     <dependency>
       <groupId>io.papermc.paper</groupId>
       <artifactId>paper-api</artifactId>
-      <version>1.21-R0.1-SNAPSHOT</version>
+      <version>[26.2.build,)</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
   <properties>
-    <maven.compiler.target>21</maven.compiler.target>
-    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.release>25</maven.compiler.release>
   </properties>
 </project>
