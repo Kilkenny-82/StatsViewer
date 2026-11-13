@@ -7,6 +7,25 @@ modules:
   pvp_kills: true
   mob_kills: true
   deaths: true
-  
+  fishing: true
+  mining: true
+  farming: true
+
+fishing:
+  # Register a bobber that hooked an entity (mob, player, boat) as result ENTITY.
+  # These are not fishing, but are kept apart so they can be filtered out.
+  record-entity-hooks: true
+  # Extra control over catch classification. Items listed here override the
+  # built-in loot table (use Minecraft item names, e.g. "cod" or "minecraft:cod").
+  # Items that are in no list and not in the built-in table are stored as UNKNOWN.
+  classification:
+    fish: []
+    treasure: []
+    junk: []
+
+farming:
+  # Also register breeding, shearing and milking.
+  livestock: true
+
 database:
   type: sqlite
