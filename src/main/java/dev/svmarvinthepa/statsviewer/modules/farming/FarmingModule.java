@@ -38,7 +38,11 @@ public class FarmingModule implements StatsModule {
             return;
         }
 
-        cropListener = new CropListener(plugin, repository);
+        cropListener = new CropListener(
+                plugin,
+                repository,
+                plugin.getConfig().getBoolean("farming.include-immature", true)
+        );
         plugin.getServer().getPluginManager().registerEvents(cropListener, plugin);
 
         if (plugin.getConfig().getBoolean("farming.livestock", true)) {

@@ -30,8 +30,10 @@ public final class FarmingCrops {
      * @param type     name stored as crop_type
      * @param harvest  when breaking it counts
      * @param products dropped items that are the crop itself, lowercase
+     * @param stalk    grows as a column (sugar cane, bamboo, cactus, kelp): breaking a block
+     *                 makes everything above it collapse and drop its items
      */
-    public record Crop(String type, Harvest harvest, Set<String> products) {}
+    public record Crop(String type, Harvest harvest, Set<String> products, boolean stalk) {}
 
     private static final Map<String, Crop> BY_BLOCK = new HashMap<>();
 
@@ -49,11 +51,11 @@ public final class FarmingCrops {
 
         register("MELON", "melon", Harvest.ALWAYS, "melon_slice");
         register("PUMPKIN", "pumpkin", Harvest.ALWAYS, "pumpkin");
-        register("SUGAR_CANE", "sugar_cane", Harvest.ALWAYS, "sugar_cane");
-        register("BAMBOO", "bamboo", Harvest.ALWAYS, "bamboo");
-        register("CACTUS", "cactus", Harvest.ALWAYS, "cactus");
-        register("KELP", "kelp", Harvest.ALWAYS, "kelp");
-        register("KELP_PLANT", "kelp", Harvest.ALWAYS, "kelp");
+        registerStalk("SUGAR_CANE", "sugar_cane", "sugar_cane");
+        registerStalk("BAMBOO", "bamboo", "bamboo");
+        registerStalk("CACTUS", "cactus", "cactus");
+        registerStalk("KELP", "kelp", "kelp");
+        registerStalk("KELP_PLANT", "kelp", "kelp");
         register("BROWN_MUSHROOM", "mushrooms", Harvest.ALWAYS, "brown_mushroom");
         register("RED_MUSHROOM", "mushrooms", Harvest.ALWAYS, "red_mushroom");
     }
@@ -62,7 +64,16 @@ public final class FarmingCrops {
 
     /** Adds or replaces a crop. {@code blockName} is the Material name, e.g. "SWEET_BERRY_BUSH". */
     public static void register(String blockName, String type, Harvest harvest, String... products) {
-        BY_BLOCK.put(blockName.toUpperCase(Locale.ROOT), new Crop(type, harvest, Set.of(products)));
+        BY_BLOCK.put(blockName.toUpperCase(Locale.ROOT), new Crop(type, harvest, Set.of(products), false));
+    }
+
+    /**
+     * Adds or replaces a crop that grows as a column. All blocks of the same {@code type}
+     * stacked above a broken block count as part of that harvest.
+     */
+    public static void registerStalk(String blockName, String type, String... products) {
+        BY_BLOCK.put(blockName.toUpperCase(Locale.ROOT),
+                new Crop(type, Harvest.ALWAYS, Set.of(products), true));
     }
 
     /** @return the crop for this block (Material name), or null when it is not a crop */

@@ -22,6 +22,7 @@ import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Registers minerals that players mine.
@@ -92,10 +93,18 @@ public class MiningListener implements Listener {
     }
 
     private void complete(PendingMine mine, BlockDropTracker.Drops drops) {
+        // gravel is only flint mining when flint really dropped (not with silk touch, not by chance)
+        int amount = drops.total();
+        String requiredDrop = mine.mineral().requiredDrop();
+        if (requiredDrop != null) {
+            amount = drops.countOf(Set.of(requiredDrop));
+            if (amount == 0) return;
+        }
+
         DebugLogger.debug(String.format(
                 "Mining %s %s tool=%s silk=%s fortune=%d drops=%d world=%s",
                 mine.playerName(), mine.mineral().oreBlock(), mine.tool(), mine.silkTouch(),
-                mine.fortune(), drops.total(), mine.conditions().world()
+                mine.fortune(), amount, mine.conditions().world()
         ));
 
         EventConditions c = mine.conditions();
@@ -109,7 +118,7 @@ public class MiningListener implements Listener {
                 mine.tool(),
                 mine.silkTouch(),
                 mine.fortune(),
-                drops.total(),
+                amount,
                 c.world(),
                 c.gamemode(),
                 c.biome(),

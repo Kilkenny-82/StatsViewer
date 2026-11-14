@@ -26,6 +26,9 @@ fishing:
 farming:
   # Also register breeding, shearing and milking.
   livestock: true
+  # Also register crops that are broken before they are fully grown (age / max_age
+  # hold the growth stage). Set to false to count only full-grown crops.
+  include-immature: true
 
 database:
   type: sqlite
