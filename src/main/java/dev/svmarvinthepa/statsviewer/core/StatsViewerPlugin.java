@@ -16,6 +16,7 @@ import dev.svmarvinthepa.statsviewer.modules.mcstats.MCStatsModule;
 import dev.svmarvinthepa.statsviewer.modules.fishing.FishingModule;
 import dev.svmarvinthepa.statsviewer.modules.mining.MiningModule;
 import dev.svmarvinthepa.statsviewer.modules.farming.FarmingModule;
+import dev.svmarvinthepa.statsviewer.modules.woodcutting.WoodcuttingModule;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -77,6 +78,7 @@ public class StatsViewerPlugin extends JavaPlugin {
         moduleManager.register(new FishingModule(this));
         moduleManager.register(new MiningModule(this));
         moduleManager.register(new FarmingModule(this));
+        moduleManager.register(new WoodcuttingModule(this));
 
         moduleManager.enableFromConfig(getConfig());
 

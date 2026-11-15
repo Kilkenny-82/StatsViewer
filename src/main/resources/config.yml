@@ -10,6 +10,14 @@ modules:
   fishing: true
   mining: true
   farming: true
+  woodcutting: true
+
+woodcutting:
+  # A felled tree stays open this many seconds after the last log cut, leaf broken,
+  # leaf decayed or sapling planted nearby. In that time what the tree yields
+  # (saplings, sticks, apples...) and replanting are added to it. The tree is written
+  # to player_trees when this window ends. Leaves can take a few minutes to decay.
+  tree-window-seconds: 300
 
 fishing:
   # Register a bobber that hooked an entity (mob, player, boat) as result ENTITY.
