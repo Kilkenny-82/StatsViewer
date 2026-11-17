@@ -67,6 +67,9 @@ import java.util.UUID;
  *       reported by Bukkit and are not counted.</li>
  *   <li>A tree cut in two sessions further apart than the window counts as two trees;
  *       two touching trees of the same wood type count as one.</li>
+ *   <li>A tree that grows back on the same spot is a new tree, even within the window:
+ *       the first log broken on a position that was already broken starts a new one.
+ *       Saplings, sticks and apples that drop while both are open go to the newest.</li>
  *   <li>Leaves around a tree that decay after the window are not counted.</li>
  * </ul>
  */
@@ -165,6 +168,7 @@ public class WoodcuttingListener implements Listener {
             session = startSession(player, block, wood, tool, conditions);
         }
         session.touch();
+        session.broken.add(pack(block.getX(), block.getY(), block.getZ()));
 
         // a structure of placed logs is remembered too, but is not a tree
         TreeSession tree = session.natural ? session : null;
@@ -322,14 +326,19 @@ public class WoodcuttingListener implements Listener {
        Tree sessions
        ========================= */
 
-    /** An open tree of this player that contains this exact block. */
+    /**
+     * An open tree of this player that contains this exact block. A position that was
+     * already broken in a tree does not count: a log there now belongs to a tree that
+     * grew back (a replanted sapling, bone meal), which is a new tree.
+     */
     private TreeSession sessionContaining(Block block, UUID player) {
         UUID world = block.getWorld().getUID();
         long key = pack(block.getX(), block.getY(), block.getZ());
 
         for (int i = sessions.size() - 1; i >= 0; i--) {
             TreeSession s = sessions.get(i);
-            if (!s.closed && s.playerUuid.equals(player) && s.world.equals(world) && s.positions.contains(key)) {
+            if (!s.closed && s.playerUuid.equals(player) && s.world.equals(world)
+                    && s.positions.contains(key) && !s.broken.contains(key)) {
                 return s;
             }
         }
@@ -564,6 +573,7 @@ public class WoodcuttingListener implements Listener {
         final String playerName;
         final String woodType;
         final Set<Long> positions;
+        final Set<Long> broken = new HashSet<>();
         final int minX, maxX, minY, maxY, minZ, maxZ;
         final String toolType;
         final EventConditions conditions;
