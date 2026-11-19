@@ -4,12 +4,14 @@ import dev.svmarvinthepa.statsviewer.core.repository.WoodcuttingRepository;
 import dev.svmarvinthepa.statsviewer.core.util.BlockDropTracker;
 import dev.svmarvinthepa.statsviewer.core.util.DebugLogger;
 import dev.svmarvinthepa.statsviewer.core.util.EventConditions;
+import dev.svmarvinthepa.statsviewer.core.util.PlacedBlocks;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.data.type.Leaves;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -21,6 +23,7 @@ import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -45,7 +48,11 @@ import java.util.UUID;
  * <h3>Per block (player_woodcutting)</h3>
  * Every wood block a player breaks is a CUT row; every sapling, propagule or fungus
  * a player places is a PLANT row. Only blocks that a player breaks count
- * ({@link BlockBreakEvent}), never explosions, fire or pistons.
+ * ({@link BlockBreakEvent}), never explosions, fire or pistons. Wood that a player
+ * placed counts for nothing when it is broken, and is not part of a tree: put-back
+ * logs for climbing, or a log cabin, are not wood that was cut. Wood that was
+ * placed by something else than a player (WorldEdit, structures) cannot be told
+ * from natural wood.
  *
  * <h3>Per tree (player_trees)</h3>
  * Trees are recognised on the first wood block a player breaks:
@@ -96,6 +103,9 @@ public class WoodcuttingListener implements Listener {
     private final Map<Material, Optional<WoodClassifier.Wood>> woodCache = new EnumMap<>(Material.class);
     private final Map<Material, Optional<String>> seedCache = new EnumMap<>(Material.class);
 
+    // Wood blocks that players placed, kept in the chunks themselves.
+    private final PlacedBlocks placed;
+
     // Open trees, oldest first. Main thread only.
     private final List<TreeSession> sessions = new ArrayList<>();
 
@@ -110,6 +120,7 @@ public class WoodcuttingListener implements Listener {
         this.windowMs = Math.max(1, windowSeconds) * 1000L;
         this.maxSessionAgeMs = Math.max(MIN_MAX_SESSION_AGE_MS, windowMs * 3);
         this.tracker = new BlockDropTracker<>(plugin, this::complete);
+        this.placed = new PlacedBlocks(plugin, "placed_wood");
     }
 
     public void start() {
@@ -145,6 +156,9 @@ public class WoodcuttingListener implements Listener {
 
             WoodClassifier.Wood wood = woodOf(type);
             if (wood != null) {
+                // a log a player put there (to climb a tree, to build) is not wood that was cut
+                if (placed.remove(block)) return;
+
                 onWoodBroken(event.getPlayer(), block, wood);
             } else if (!sessions.isEmpty() && Tag.LEAVES.isTagged(type)) {
                 onLeavesBroken(event.getPlayer(), block);
@@ -289,6 +303,12 @@ public class WoodcuttingListener implements Listener {
             Block block = event.getBlockPlaced();
             Material type = block.getType();
 
+            // placed wood is remembered, so breaking it again does not count as cutting
+            if (woodOf(type) != null) {
+                placed.add(block);
+                return;
+            }
+
             String woodType = seedCache
                     .computeIfAbsent(type, t -> Optional.ofNullable(WoodClassifier.seedType(t.name())))
                     .orElse(null);
@@ -317,6 +337,24 @@ public class WoodcuttingListener implements Listener {
                     block.getX(), block.getY(), block.getZ(),
                     LocalDateTime.now()
             ));
+        } catch (Exception e) {
+            DebugLogger.error("Woodcutting registration failed", e);
+        }
+    }
+
+    /**
+     * A tree that grows is natural wood, also on a spot where a placed log was once
+     * (that log may have burned or blown up without a player breaking it, which would
+     * have left its mark behind).
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onGrow(StructureGrowEvent event) {
+        try {
+            for (BlockState state : event.getBlocks()) {
+                if (woodOf(state.getType()) != null) {
+                    placed.remove(state.getBlock());
+                }
+            }
         } catch (Exception e) {
             DebugLogger.error("Woodcutting registration failed", e);
         }
@@ -397,8 +435,11 @@ public class WoodcuttingListener implements Listener {
                         WoodClassifier.Wood other = woodOf(neighbour.getType());
 
                         if (other != null) {
+                            // logs a player placed are not part of the tree
                             if (other.woodType().equals(wood.woodType())
                                     && positions.size() < MAX_TREE_BLOCKS
+                                    && !positions.contains(pack(x, y, z))
+                                    && !placed.contains(neighbour)
                                     && positions.add(pack(x, y, z))) {
                                 queue.add(new int[] {x, y, z});
                                 bounds[0] = Math.min(bounds[0], x);
